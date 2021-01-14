@@ -90,14 +90,14 @@ bool PoseInitializer::serviceInitial(
 
   geometry_msgs::PoseWithCovarianceStamped::Ptr aligned_pose_msg_ptr(
     new geometry_msgs::PoseWithCovarianceStamped);
-  const bool succeeded_align = callAlignService(*add_height_pose_msg_ptr, aligned_pose_msg_ptr);
-
-  if (succeeded_align) {
-    initial_pose_pub_.publish(*aligned_pose_msg_ptr);
-    return true;
-  } else {
-    return false;
+  // retrying the initial pose estimation by 1 second
+  while (!callAlignService(*add_height_pose_msg_ptr, aligned_pose_msg_ptr)) {
+    ROS_WARN("[pose_initializer] Waiting align service for initial pose. Retrying...");
+    sleep(1);
   }
+  ROS_INFO("[pose_initializer] Initial pose estimation has been completed.");
+  initial_pose_pub_.publish(*aligned_pose_msg_ptr);
+  return true;
 }
 
 void PoseInitializer::callbackInitialPose(
@@ -207,7 +207,8 @@ bool PoseInitializer::callAlignService(
     *output_pose_msg_ptr = srv.response.pose_with_cov;
     return true;
   } else {
-    ROS_ERROR("[pose_initializer] could not call NDT Align Server");
+    // just warn for retrying
+    ROS_WARN("[pose_initializer] could not call NDT Align Server");
     return false;
   }
 }

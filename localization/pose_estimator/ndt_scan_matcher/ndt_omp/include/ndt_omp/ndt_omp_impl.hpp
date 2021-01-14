@@ -93,6 +93,53 @@ ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::NormalDistribut
 
   search_method = DIRECT7;
   num_threads_ = omp_get_max_threads();
+
+  for (int i = 0; i < num_threads_; i++) {
+    num_neighborhoods_.push_back(std::vector<size_t>());
+  }
+}
+
+template <typename PointSource, typename PointTarget>
+void ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::dumpConfigurations() const {
+  std::cout << ">>>NDT_OMP_Configurations" << std::endl;
+  std::cout << "openmp_num_threads: " << num_threads_ << std::endl;
+  std::cout << "neighbor_search_method: " << NeighborSearchMethodToString(search_method) << std::endl;
+  std::cout << "<<<" << std::endl;
+}
+
+template <typename PointSource, typename PointTarget>
+void ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::dumpAlignInfo() const {
+  std::cout << ">>>Align(computeTransformation)Info" << std::endl;
+  std::cout << "inputPoints: " << num_input_points_ << std::endl;
+  size_t total_ns = 0;
+  size_t total_cd = 0;
+  size_t total_ud = 0;
+  std::cout << "#neighborSearch: ";
+  for (int i = 0; i < num_threads_; i++) {
+    total_ns += num_neighborSearch_[i];
+    std::cout << num_neighborSearch_[i] << " ";
+  }
+  std::cout << "total: " << total_ns << std::endl;
+  std::cout << "#neighborGrids: ";
+  for (int i = 0; i < num_threads_; i++) {
+    for (int j = 0; j < num_neighborhoods_[i].size(); j++) {
+      std::cout << num_neighborhoods_[i][j] << " ";
+    }
+    std::cout << std::endl;
+  }
+  std::cout << "#computePointDerivatives: ";
+  for (int i = 0; i < num_threads_; i++) {
+    total_cd += num_computePointDerivatives_[i];
+    std::cout << num_computePointDerivatives_[i] << " ";
+  }
+  std::cout << "total: " << total_cd << std::endl;
+  std::cout << "#updateDerivatives: ";
+  for (int i = 0; i < num_threads_; i++) {
+    total_ud += num_updateDerivatives_[i];
+    std::cout << num_updateDerivatives_[i] << " ";
+  }
+  std::cout << "total: " << total_ud << std::endl;
+  std::cout << "<<<" << std::endl;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -262,6 +309,23 @@ double ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::computeD
   std::vector<std::vector<TargetGridLeafConstPtr>> neighborhoods(num_threads_);
   std::vector<std::vector<float>> distancess(num_threads_);
 
+  // for evaluations
+  num_neighborSearch_.resize(num_threads_);
+  num_computePointDerivatives_.resize(num_threads_);
+  num_updateDerivatives_.resize(num_threads_);
+  for (int i = 0; i < num_threads_; i++) {
+    num_neighborSearch_[i] = 0;
+    num_computePointDerivatives_[i] = 0;
+    num_updateDerivatives_[i] = 0;
+  }
+
+  num_input_points_ = input_->points.size();
+
+  // for debug
+  for (int thid = 0; thid < num_threads_; thid++) {
+    num_neighborhoods_[thid].clear();
+  }
+
   // Update gradient and hessian for each point, line 17 in Algorithm 2 [Magnusson 2009]
 #pragma omp parallel for num_threads(num_threads_) schedule(guided, 8)
   for (int idx = 0; idx < input_->points.size(); idx++) {
@@ -305,6 +369,8 @@ double ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::computeD
         break;
     }
 
+    num_neighborSearch_[thread_n]++;
+    num_neighborhoods_[thread_n].push_back(neighborhood.size());
     double score_pt = 0;
     Eigen::Matrix<double, 6, 1> score_gradient_pt = Eigen::Matrix<double, 6, 1>::Zero();
     Eigen::Matrix<double, 6, 6> hessian_pt = Eigen::Matrix<double, 6, 6>::Zero();
@@ -325,9 +391,11 @@ double ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::computeD
 
       // Compute derivative of transform function w.r.t. transform vector, J_E and H_E in Equations 6.18 and 6.20
       // [Magnusson 2009]
+      num_computePointDerivatives_[thread_n]++; // counting up the num of calls of computeDerivatives
       computePointDerivatives(x, point_gradient_, point_hessian_);
       // Update score, gradient and hessian, lines 19-21 in Algorithm 2, according to Equations 6.10, 6.12 and 6.13,
       // respectively [Magnusson 2009]
+      num_updateDerivatives_[thread_n]++; // counting up thu num of calls of updateDerivatives
       score_pt += updateDerivatives(
         score_gradient_pt, hessian_pt, point_gradient_, point_hessian_, x_trans, c_inv,
         compute_hessian);

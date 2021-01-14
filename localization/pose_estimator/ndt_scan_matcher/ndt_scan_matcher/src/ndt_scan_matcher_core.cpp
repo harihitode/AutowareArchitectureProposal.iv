@@ -40,6 +40,7 @@ NDTScanMatcher::NDTScanMatcher(ros::NodeHandle nh, ros::NodeHandle private_nh)
   converged_param_transform_probability_(4.5)
 {
   key_value_stdmap_["state"] = "Initializing";
+  dump_stats_ = false;
 
   int ndt_implement_type_tmp = 0;
   private_nh_.getParam("ndt_implement_type", ndt_implement_type_tmp);
@@ -65,6 +66,10 @@ NDTScanMatcher::NDTScanMatcher(ros::NodeHandle nh, ros::NodeHandle private_nh)
     private_nh_.getParam("omp_num_threads", omp_params_.num_threads);
     omp_params_.num_threads = std::max(omp_params_.num_threads, 1);
     ndt_omp_ptr->setNumThreads(omp_params_.num_threads);
+
+    private_nh_.getParam("dump_stats", dump_stats_);
+    ndt_omp_ptr->setDumpStats(dump_stats_);
+    ndt_omp_ptr->dumpConfigurations();
 
     ndt_ptr_ = ndt_omp_ptr;
   } else {
@@ -194,12 +199,12 @@ bool NDTScanMatcher::serviceNDTAlign(
   tf2::doTransform(req.pose_with_cov, *mapTF_initial_pose_msg_ptr, *TF_pose_to_map_ptr);
 
   if (ndt_ptr_->getInputTarget() == nullptr) {
-    // TODO wait for map pointcloud
+    std::cout << "# point cloud map is not loaded yet." << std::endl;
     return false;
   }
 
   if (ndt_ptr_->getInputSource() == nullptr) {
-    // TODO wait for sensor pointcloud
+    std::cout << "# sensor point cloud could not be received." << std::endl;
     return false;
   }
 
@@ -382,7 +387,6 @@ void NDTScanMatcher::callbackSensorPoints(
     transform_probability < converged_param_transform_probability_) {
     is_converged = false;
     ++skipping_publish_num;
-    std::cout << "Not Converged" << std::endl;
   } else {
     skipping_publish_num = 0;
   }
@@ -512,12 +516,24 @@ void NDTScanMatcher::callbackSensorPoints(
   key_value_stdmap_["iteration_num"] = std::to_string(iteration_num);
   key_value_stdmap_["skipping_publish_num"] = std::to_string(skipping_publish_num);
 
-  std::cout << "------------------------------------------------" << std::endl;
-  std::cout << "align_time: " << align_time << "ms" << std::endl;
-  std::cout << "exe_time: " << exe_time << "ms" << std::endl;
-  std::cout << "trans_prob: " << transform_probability << std::endl;
-  std::cout << "iter_num: " << iteration_num << std::endl;
-  std::cout << "skipping_publish_num: " << skipping_publish_num << std::endl;
+  if (dump_stats_) {
+    ndt_ptr_->dumpConfigurations();
+    ndt_ptr_->dumpAlignInfo();
+    std::string flag;
+    if (is_converged) {
+      flag = "[C]";
+      std::cout << "Converged BEGIN" << std::endl;
+    } else {
+      flag = "[D]";
+      std::cout << "Diverged BEGIN" << std::endl;
+    }
+    std::cout << flag << "align_time: " << align_time << " ms" << std::endl;
+    std::cout << flag << "exe_time: " << exe_time << " ms" << std::endl;
+    std::cout << flag << "trans_prob: " << transform_probability << std::endl;
+    std::cout << flag << "iter_num: " << iteration_num << std::endl;
+    std::cout << flag << "skipping_publish_num: " << skipping_publish_num << std::endl;
+    std::cout << "END" << std::endl;
+  }
 }
 
 geometry_msgs::PoseWithCovarianceStamped NDTScanMatcher::alignUsingMonteCarlo(

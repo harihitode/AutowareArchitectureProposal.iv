@@ -157,4 +157,5 @@ private:
 
   std::thread diagnostic_thread_;
   std::map<std::string, std::string> key_value_stdmap_;
+  bool dump_stats_;
 };

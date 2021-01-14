@@ -454,13 +454,13 @@ protected:
   std::vector<Eigen::Matrix4f> transformation_array_;
 
   // evaluation items
-  bool dump_stats_
+  bool dump_stats_;
   std::vector<size_t> num_neighborSearch_;
   std::vector<size_t> num_computePointDerivatives_;
   std::vector<size_t> num_updateDerivatives_;
   std::vector<std::vector<size_t>> num_neighborhoods_;
   size_t num_input_points_;
-  size_t num_iterations_in_frame;
+  size_t num_iterations_in_frame_;
 
 public:
   ndt::NeighborSearchMethod search_method;

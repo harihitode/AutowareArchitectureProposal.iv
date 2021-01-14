@@ -42,6 +42,7 @@ include_directories(
 add_library(ndt_omp
   src/ndt_omp/voxel_grid_covariance_omp.cpp
   src/ndt_omp/ndt_omp.cpp
+  ../ndt/src/common.cpp
 )
 
 add_executable(align

@@ -57,7 +57,7 @@ class NDTScanMatcher
   struct OMPParams
   {
     OMPParams() : search_method(ndt::NeighborSearchMethod::KDTREE), num_threads(1){};
-    ndt_omp::NeighborSearchMethod search_method;
+    ndt::NeighborSearchMethod search_method;
     int num_threads;
   };
 

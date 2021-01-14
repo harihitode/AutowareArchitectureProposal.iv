@@ -64,12 +64,16 @@ public:
   int getNumThreads() const;
   ndt::NeighborSearchMethod getNeighborhoodSearchMethod() const;
 
+  void setDumpStats(bool f) {
+    ndt_ptr_->setDumpStats(f);
+  }
+
   void dumpConfigurations() const override {
     ndt_ptr_->dumpConfigurations();
   }
 
-  void dumpAlignInfo() const override {
-    ndt_ptr_->dumpAlignInfo();
+  void dumpAlignInfo(const std::string & prefix) const override {
+    ndt_ptr_->dumpAlignInfo(prefix);
   }
 
 private:

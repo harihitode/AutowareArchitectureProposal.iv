@@ -28,7 +28,7 @@ catkin_package(
   INCLUDE_DIRS include
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS})
+include_directories(include ../ndt/include ${catkin_INCLUDE_DIRS})
 
 add_executable(ndt_scan_matcher
   src/ndt_scan_matcher_node.cpp

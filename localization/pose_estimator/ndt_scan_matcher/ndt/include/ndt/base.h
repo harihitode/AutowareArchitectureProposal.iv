@@ -57,7 +57,7 @@ public:
   virtual boost::shared_ptr<pcl::search::KdTree<PointTarget>> getSearchMethodTarget() const = 0;
 
   virtual void dumpConfigurations() const {}; // dump the NDT configurations
-  virtual void dumpAlignInfo() const {}; // dump the information of the last align
+  virtual void dumpAlignInfo(const std::string &) const {}; // dump the information of the last align
 };
 
 #include "ndt/impl/base.hpp"

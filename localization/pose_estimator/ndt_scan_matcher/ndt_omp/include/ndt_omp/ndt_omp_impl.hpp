@@ -91,8 +91,9 @@ ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::NormalDistribut
   transformation_epsilon_ = 0.1;
   max_iterations_ = 35;
 
-  search_method = DIRECT7;
+  search_method = ndt::NeighborSearchMethod::DIRECT7;
   num_threads_ = omp_get_max_threads();
+  num_iterations_in_frame_ = 0;
 
   for (int i = 0; i < num_threads_; i++) {
     num_neighborhoods_.push_back(std::vector<size_t>());
@@ -101,45 +102,41 @@ ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::NormalDistribut
 
 template <typename PointSource, typename PointTarget>
 void ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::dumpConfigurations() const {
-  std::cout << ">>>NDT_OMP_Configurations" << std::endl;
-  std::cout << "openmp_num_threads: " << num_threads_ << std::endl;
-  std::cout << "neighbor_search_method: " << NeighborSearchMethodToString(search_method) << std::endl;
-  std::cout << "<<<" << std::endl;
+  std::cout << "# openmp_num_threads: " << num_threads_ << std::endl;
+  std::cout << "# neighbor_search_method: " << search_method << std::endl;
 }
 
 template <typename PointSource, typename PointTarget>
-void ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::dumpAlignInfo() const {
-  std::cout << ">>>Align(computeTransformation)Info" << std::endl;
-  std::cout << "inputPoints: " << num_input_points_ << std::endl;
+void ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::dumpAlignInfo(const std::string & prefix) const {
+  std::cout << prefix << "sensor_points: " << num_input_points_ << std::endl;
   size_t total_ns = 0;
   size_t total_cd = 0;
   size_t total_ud = 0;
-  std::cout << "#neighborSearch: ";
+  std::cout << prefix << "neighborSearch: ";
   for (int i = 0; i < num_threads_; i++) {
     total_ns += num_neighborSearch_[i];
     std::cout << num_neighborSearch_[i] << " ";
   }
   std::cout << "total: " << total_ns << std::endl;
-  std::cout << "#neighborGrids: ";
+  std::cout << prefix << "neighbor_obtained: ";
   for (int i = 0; i < num_threads_; i++) {
     for (int j = 0; j < num_neighborhoods_[i].size(); j++) {
       std::cout << num_neighborhoods_[i][j] << " ";
     }
     std::cout << std::endl;
   }
-  std::cout << "#computePointDerivatives: ";
+  std::cout << prefix << "call_compute_point_derivatives: ";
   for (int i = 0; i < num_threads_; i++) {
     total_cd += num_computePointDerivatives_[i];
     std::cout << num_computePointDerivatives_[i] << " ";
   }
   std::cout << "total: " << total_cd << std::endl;
-  std::cout << "#updateDerivatives: ";
+  std::cout << prefix << "call_update_derivatives: ";
   for (int i = 0; i < num_threads_; i++) {
     total_ud += num_updateDerivatives_[i];
     std::cout << num_updateDerivatives_[i] << " ";
   }
   std::cout << "total: " << total_ud << std::endl;
-  std::cout << "<<<" << std::endl;
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -147,6 +144,7 @@ template <typename PointSource, typename PointTarget>
 void ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::computeTransformation(
   PointCloudSource & output, const Eigen::Matrix4f & guess)
 {
+  num_iterations_in_frame_ = 0;
   nr_iterations_ = 0;
   converged_ = false;
 
@@ -288,6 +286,7 @@ double ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::computeD
   Eigen::Matrix<double, 6, 1> & score_gradient, Eigen::Matrix<double, 6, 6> & hessian,
   PointCloudSource & trans_cloud, Eigen::Matrix<double, 6, 1> & p, bool compute_hessian)
 {
+  std::cout << "# iteration: " << num_iterations_in_frame_++ << std::endl;
   score_gradient.setZero();
   hessian.setZero();
   double score = 0;
@@ -353,18 +352,18 @@ double ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::computeD
     auto & distances = distancess[thread_n];
 
     // Find nieghbors (Radius search has been experimentally faster than direct neighbor checking.
+    std::cout << "# search(" << idx << "): " << x_trans_pt << std::endl;
     switch (search_method) {
-      case KDTREE:
+      case ndt::NeighborSearchMethod::KDTREE:
         target_cells_.radiusSearch(x_trans_pt, resolution_, neighborhood, distances);
         break;
-      case DIRECT26:
+      case ndt::NeighborSearchMethod::DIRECT26:
         target_cells_.getNeighborhoodAtPoint(x_trans_pt, neighborhood);
         break;
-      default:
-      case DIRECT7:
+      case ndt::NeighborSearchMethod::DIRECT7:
         target_cells_.getNeighborhoodAtPoint7(x_trans_pt, neighborhood);
         break;
-      case DIRECT1:
+      case ndt::NeighborSearchMethod::DIRECT1:
         target_cells_.getNeighborhoodAtPoint1(x_trans_pt, neighborhood);
         break;
     }

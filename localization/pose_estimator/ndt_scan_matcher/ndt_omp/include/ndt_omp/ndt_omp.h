@@ -42,15 +42,13 @@
 #define PCL_REGISTRATION_NDT_OMP_H_
 
 #include <pcl/registration/registration.h>
+#include <ndt/common.h>
 #include "voxel_grid_covariance_omp.h"
 
 #include <unsupported/Eigen/NonLinearOptimization>
 
 namespace ndt_omp
 {
-enum NeighborSearchMethod { KDTREE, DIRECT26, DIRECT7, DIRECT1 };
-std::string NeighborSearchMethodToString(NeighborSearchMethod method);
-
 /** \brief A 3D Normal Distribution Transform registration implementation for point cloud data.
  * \note For more information please see
  * <b>Magnusson, M. (2009). The Three-Dimensional Normal-Distributions Transform —
@@ -102,6 +100,8 @@ public:
 
   inline int getNumThreads() const { return (num_threads_); }
 
+  inline void setDumpStats(bool f) { dump_stats_ = f; }
+
   /** \brief Provide a pointer to the input target (e.g., the point cloud that we want to align the input source to).
    * \param[in] cloud the input point cloud target
    */
@@ -109,6 +109,15 @@ public:
   {
     pcl::Registration<PointSource, PointTarget>::setInputTarget(cloud);
     init();
+    // dump voxel information
+    auto all_leaves_map = target_cells_.getLeaves();
+    std::cout << "# size_voxel: " << resolution_ << "m," << resolution_ << "m," << resolution_ << "m" << std::endl;
+    std::cout << "# num_voxel: " << all_leaves_map.size() << std::endl;
+  }
+
+  inline void setInputSource(const PointCloudSourceConstPtr & cloud)
+  {
+    pcl::Registration<PointSource, PointTarget>::setInputSource(cloud);
   }
 
   /** \brief Set/change the voxel grid resolution.
@@ -148,9 +157,9 @@ public:
    */
   inline void setOulierRatio(double outlier_ratio) { outlier_ratio_ = outlier_ratio; }
 
-  inline void setNeighborhoodSearchMethod(NeighborSearchMethod method) { search_method = method; }
+  inline void setNeighborhoodSearchMethod(ndt::NeighborSearchMethod method) { search_method = method; }
 
-  inline NeighborSearchMethod getNeighborhoodSearchMethod() const { return (search_method); }
+  inline ndt::NeighborSearchMethod getNeighborhoodSearchMethod() const { return (search_method); }
 
   /** \brief Get the registration alignment probability.
    * \return transformation probability
@@ -445,16 +454,18 @@ protected:
   std::vector<Eigen::Matrix4f> transformation_array_;
 
   // evaluation items
+  bool dump_stats_
   std::vector<size_t> num_neighborSearch_;
   std::vector<size_t> num_computePointDerivatives_;
   std::vector<size_t> num_updateDerivatives_;
   std::vector<std::vector<size_t>> num_neighborhoods_;
   size_t num_input_points_;
+  size_t num_iterations_in_frame;
 
 public:
-  NeighborSearchMethod search_method;
+  ndt::NeighborSearchMethod search_method;
   void dumpConfigurations() const;
-  void dumpAlignInfo() const;
+  void dumpAlignInfo(const std::string&) const;
 
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 };

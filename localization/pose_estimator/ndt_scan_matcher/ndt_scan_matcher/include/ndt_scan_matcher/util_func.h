@@ -173,8 +173,9 @@ void getNearestTimeStampPose(
     }
     output_old_pose_cov_msg_ptr = output_new_pose_cov_msg_ptr;
   }
-  std::cout << output_old_pose_cov_msg_ptr->header.stamp.toSec() - 1576563220 << std::endl;
-  std::cout << output_new_pose_cov_msg_ptr->header.stamp.toSec() - 1576563220 << std::endl;
+  // ignore
+  // std::cout << output_old_pose_cov_msg_ptr->header.stamp.toSec() - 1576563220 << std::endl;
+  // std::cout << output_new_pose_cov_msg_ptr->header.stamp.toSec() - 1576563220 << std::endl;
 }
 
 geometry_msgs::PoseStamped interpolatePose(

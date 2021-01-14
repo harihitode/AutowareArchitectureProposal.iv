@@ -59,10 +59,10 @@ public:
 
   // only OMP Impl
   void setNumThreads(int n);
-  void setNeighborhoodSearchMethod(ndt_omp::NeighborSearchMethod method);
+  void setNeighborhoodSearchMethod(ndt::NeighborSearchMethod method);
 
   int getNumThreads() const;
-  ndt_omp::NeighborSearchMethod getNeighborhoodSearchMethod() const;
+  ndt::NeighborSearchMethod getNeighborhoodSearchMethod() const;
 
   void dumpConfigurations() const override {
     ndt_ptr_->dumpConfigurations();

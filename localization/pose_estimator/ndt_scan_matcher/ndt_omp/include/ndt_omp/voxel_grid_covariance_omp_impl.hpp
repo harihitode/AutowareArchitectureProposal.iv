@@ -377,10 +377,14 @@ int ndt_omp::VoxelGridCovariance<PointT>::getNeighborhoodAtPoint(
       (Eigen::Vector4i() << relative_coordinates.col(ni), 0).finished();
     // Checking if the specified cell is in the grid
     if ((diff2min <= displacement.array()).all() && (diff2max >= displacement.array()).all()) {
-      auto leaf_iter = leaves_.find(((ijk + displacement - min_b_).dot(divb_mul_)));
+      size_t key = (ijk + displacement - min_b_).dot(divb_mul_);
+      auto leaf_iter = leaves_.find(key);
       if (leaf_iter != leaves_.end() && leaf_iter->second.nr_points >= min_points_per_voxel_) {
         LeafConstPtr leaf = &(leaf_iter->second);
         neighbors.push_back(leaf);
+        // dump pointer
+        printf("# key: %x\n", key);
+        printf("%p\n", leaf);
       }
     }
   }

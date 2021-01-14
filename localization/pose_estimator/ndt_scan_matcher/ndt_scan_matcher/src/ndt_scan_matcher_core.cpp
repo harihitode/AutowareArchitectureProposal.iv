@@ -46,20 +46,20 @@ NDTScanMatcher::NDTScanMatcher(ros::NodeHandle nh, ros::NodeHandle private_nh)
   private_nh_.getParam("ndt_implement_type", ndt_implement_type_tmp);
   ndt_implement_type_ = static_cast<NDTImplementType>(ndt_implement_type_tmp);
   if (ndt_implement_type_ == NDTImplementType::PCL_GENERIC) {
-    ROS_INFO("NDT Implement Type is PCL GENERIC");
+    printf("# NDT Implement Type is PCL GENERIC\n");
     ndt_ptr_.reset(new NormalDistributionsTransformPCLGeneric<PointSource, PointTarget>);
   } else if (ndt_implement_type_ == NDTImplementType::PCL_MODIFIED) {
-    ROS_INFO("NDT Implement Type is PCL MODIFIED");
+    printf("# NDT Implement Type is PCL MODIFIED\n");
     ndt_ptr_.reset(new NormalDistributionsTransformPCLModified<PointSource, PointTarget>);
   } else if (ndt_implement_type_ == NDTImplementType::OMP) {
-    ROS_INFO("NDT Implement Type is OMP");
+    printf("# NDT Implement Type is OMP\n");
 
     std::shared_ptr<NormalDistributionsTransformOMP<PointSource, PointTarget>> ndt_omp_ptr(
       new NormalDistributionsTransformOMP<PointSource, PointTarget>);
 
     int search_method = static_cast<int>(omp_params_.search_method);
     private_nh_.getParam("omp_neighborhood_search_method", search_method);
-    omp_params_.search_method = static_cast<ndt_omp::NeighborSearchMethod>(search_method);
+    omp_params_.search_method = static_cast<ndt::NeighborSearchMethod>(search_method);
     // TODO check search_method is valid value.
     ndt_omp_ptr->setNeighborhoodSearchMethod(omp_params_.search_method);
 
@@ -74,17 +74,17 @@ NDTScanMatcher::NDTScanMatcher(ros::NodeHandle nh, ros::NodeHandle private_nh)
     ndt_ptr_ = ndt_omp_ptr;
   } else {
     ndt_implement_type_ = NDTImplementType::PCL_GENERIC;
-    ROS_INFO("NDT Implement Type is PCL GENERIC");
+    printf("NDT Implement Type is PCL GENERIC");
     ndt_ptr_.reset(new NormalDistributionsTransformPCLGeneric<PointSource, PointTarget>);
   }
 
   int points_queue_size = 0;
   private_nh_.getParam("input_sensor_points_queue_size", points_queue_size);
   points_queue_size = std::max(points_queue_size, 0);
-  ROS_INFO("points_queue_size: %d", points_queue_size);
+  printf("# points_queue_size: %d\n", points_queue_size);
 
   private_nh_.getParam("base_frame", base_frame_);
-  ROS_INFO("base_frame_id: %s", base_frame_.c_str());
+  printf("# base_frame_id: %s\n", base_frame_.c_str());
 
   double trans_epsilon = ndt_ptr_->getTransformationEpsilon();
   double step_size = ndt_ptr_->getStepSize();
@@ -98,9 +98,8 @@ NDTScanMatcher::NDTScanMatcher(ros::NodeHandle nh, ros::NodeHandle private_nh)
   ndt_ptr_->setStepSize(step_size);
   ndt_ptr_->setResolution(resolution);
   ndt_ptr_->setMaximumIterations(max_iterations);
-  ROS_INFO(
-    "trans_epsilon: %lf, step_size: %lf, resolution: %lf, max_iterations: %d", trans_epsilon,
-    step_size, resolution, max_iterations);
+  printf("# trans_epsilon: %lf, step_size: %lf, resolution: %lf, max_iterations: %d\n", trans_epsilon,
+         step_size, resolution, max_iterations);
 
   private_nh_.getParam(
     "converged_param_transform_probability", converged_param_transform_probability_);
@@ -185,6 +184,7 @@ void NDTScanMatcher::timerDiagnostic()
   }
 }
 
+// i.e. NDT Align Server
 bool NDTScanMatcher::serviceNDTAlign(
   autoware_localization_srvs::PoseWithCovarianceStamped::Request & req,
   autoware_localization_srvs::PoseWithCovarianceStamped::Response & res)
@@ -517,22 +517,21 @@ void NDTScanMatcher::callbackSensorPoints(
   key_value_stdmap_["skipping_publish_num"] = std::to_string(skipping_publish_num);
 
   if (dump_stats_) {
-    ndt_ptr_->dumpConfigurations();
-    ndt_ptr_->dumpAlignInfo();
     std::string flag;
     if (is_converged) {
-      flag = "[C]";
-      std::cout << "Converged BEGIN" << std::endl;
+      flag = "# [C]";
+      std::cout << flag << "Converged BEGIN" << std::endl;
     } else {
-      flag = "[D]";
-      std::cout << "Diverged BEGIN" << std::endl;
+      flag = "# [D]";
+      std::cout << flag << "Diverged BEGIN" << std::endl;
     }
+    ndt_ptr_->dumpAlignInfo(flag);
     std::cout << flag << "align_time: " << align_time << " ms" << std::endl;
     std::cout << flag << "exe_time: " << exe_time << " ms" << std::endl;
     std::cout << flag << "trans_prob: " << transform_probability << std::endl;
     std::cout << flag << "iter_num: " << iteration_num << std::endl;
     std::cout << flag << "skipping_publish_num: " << skipping_publish_num << std::endl;
-    std::cout << "END" << std::endl;
+    std::cout << flag << "END" << std::endl;
   }
 }
 

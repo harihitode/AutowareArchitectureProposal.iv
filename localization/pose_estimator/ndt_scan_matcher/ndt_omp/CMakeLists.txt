@@ -35,6 +35,7 @@ catkin_package(
 
 include_directories(
   include
+  ../ndt/include
   ${catkin_INCLUDE_DIRS}
 )
 

@@ -286,7 +286,9 @@ double ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::computeD
   Eigen::Matrix<double, 6, 1> & score_gradient, Eigen::Matrix<double, 6, 6> & hessian,
   PointCloudSource & trans_cloud, Eigen::Matrix<double, 6, 1> & p, bool compute_hessian)
 {
-  std::cout << "# iteration: " << num_iterations_in_frame_++ << std::endl;
+  if (dump_stats_) {
+    std::cout << "# iteration: " << num_iterations_in_frame_++ << std::endl;
+  }
   score_gradient.setZero();
   hessian.setZero();
   double score = 0;
@@ -352,7 +354,9 @@ double ndt_omp::NormalDistributionsTransform<PointSource, PointTarget>::computeD
     auto & distances = distancess[thread_n];
 
     // Find nieghbors (Radius search has been experimentally faster than direct neighbor checking.
-    std::cout << "# search(" << idx << "): " << x_trans_pt << std::endl;
+    if (dump_stats_) {
+      std::cout << "# search(" << idx << "): " << x_trans_pt << std::endl;
+    }
     switch (search_method) {
       case ndt::NeighborSearchMethod::KDTREE:
         target_cells_.radiusSearch(x_trans_pt, resolution_, neighborhood, distances);

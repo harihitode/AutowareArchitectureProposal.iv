@@ -205,7 +205,7 @@ void PoseInitializer::callAlignServiceAndPublishResult(
 
   ndt_client_->async_send_request(
     req,
-    [this](rclcpp::Client<autoware_localization_srvs::srv::PoseWithCovarianceStamped>::SharedFuture
+    [this, input_pose_msg](rclcpp::Client<autoware_localization_srvs::srv::PoseWithCovarianceStamped>::SharedFuture
     result) {
       if (result.get()->success) {
         RCLCPP_INFO(get_logger(), "called NDT Align Server");
@@ -223,6 +223,7 @@ void PoseInitializer::callAlignServiceAndPublishResult(
       } else {
         RCLCPP_INFO(get_logger(), "failed NDT Align Server");
         response_id_ = result.get()->seq;
+        callAlignServiceAndPublishResult(input_pose_msg);
       }
     });
 }

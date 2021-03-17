@@ -52,6 +52,9 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <chrono>
+#include <fstream>
+#include <iostream>
 
 #include "pointcloud_preprocessor/filter.hpp"
 #include "pcl/io/io.h"
@@ -212,6 +215,13 @@ rcl_interfaces::msg::SetParametersResult pointcloud_preprocessor::Filter::filter
 void pointcloud_preprocessor::Filter::input_indices_callback(
   const PointCloud2ConstPtr cloud, const PointIndicesConstPtr indices)
 {
+  {
+    unsigned long long real_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    std::ofstream f0(std::string(std::getenv("HOME")) + "/.ros/eval_log/filter.log", std::ios::app);
+    f0 << this->get_name() << " start " << rclcpp::Time(cloud->header.stamp).nanoseconds() << " " << real_time << std::endl;
+    f0.close();
+  }
+
   // If cloud is given, check if it's valid
   if (!isValid(cloud)) {
     RCLCPP_ERROR(this->get_logger(), "[input_indices_callback] Invalid input!");
@@ -281,4 +291,15 @@ void pointcloud_preprocessor::Filter::input_indices_callback(
   if (indices) {vindices.reset(new std::vector<int>(indices->indices));}
 
   computePublish(cloud_tf, vindices);
+
+  {
+    unsigned long long real_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    std::ofstream f0(std::string(std::getenv("HOME")) + "/.ros/eval_log/filter.log", std::ios::app);
+    f0 << this->get_name() << " end " << rclcpp::Time(cloud_tf->header.stamp).nanoseconds() << " " << real_time << std::endl;
+    f0.close();
+
+    std::ofstream f1(std::string(std::getenv("HOME")) + "/.ros/eval_log/filter_sub.log", std::ios::app);
+    f1 << this->get_name() << " " << rclcpp::Time(cloud->header.stamp).nanoseconds() << " " << rclcpp::Time(cloud_tf->header.stamp).nanoseconds() << std::endl;
+    f1.close();
+  }
 }

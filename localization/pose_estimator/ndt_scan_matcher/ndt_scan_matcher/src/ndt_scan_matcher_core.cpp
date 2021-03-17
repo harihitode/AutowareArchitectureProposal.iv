@@ -217,7 +217,7 @@ void NDTScanMatcher::serviceNDTAlign(
   auto mapTF_initial_pose_msg_ptr =
     std::make_shared<geometry_msgs::msg::PoseWithCovarianceStamped>();
   tf2::doTransform(req->pose_with_cov, *mapTF_initial_pose_msg_ptr, *TF_pose_to_map_ptr);
-
+  res->success = true;
   if (ndt_ptr_->getInputTarget() == nullptr) {
     res->success = false;
     res->seq = req->seq;
@@ -320,6 +320,12 @@ void NDTScanMatcher::callbackMapPoints(
 void NDTScanMatcher::callbackSensorPoints(
   sensor_msgs::msg::PointCloud2::ConstSharedPtr sensor_points_sensorTF_msg_ptr)
 {
+  {
+    unsigned long long real_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    std::ofstream f0(std::string(std::getenv("HOME")) + "/.ros/eval_log/ndt_scan_matcher.log", std::ios::app);
+    f0 << this->get_name() << " start " << sensor_points_sensorTF_msg_ptr->header.stamp.nanosec / 1000 << " " << real_time << std::endl;
+    f0.close();
+  }
   const auto exe_start_time = std::chrono::system_clock::now();
   // mutex Map
   std::lock_guard<std::mutex> lock(ndt_map_mtx_);
@@ -561,6 +567,18 @@ void NDTScanMatcher::callbackSensorPoints(
       result_pose_with_cov_msg.pose.pose.position.z,
       2.0));
   initial_to_result_distance_new_pub_->publish(initial_to_result_distance_new_msg);
+
+  {
+    unsigned long long real_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    unsigned long long stamp = sensor_points_sensorTF_msg_ptr->header.stamp.nanosec / 1000;
+    std::ofstream f0(std::string(std::getenv("HOME")) + "/.ros/eval_log/ndt_scan_matcher.log", std::ios::app);
+    f0 << this->get_name() << " end " << stamp << " " << real_time << std::endl;
+    f0.close();
+
+    std::ofstream f1(std::string(std::getenv("HOME")) + "/.ros/eval_log/ndt_scan_matcher_sub.log", std::ios::app);
+    f1 << this->get_name() << " " << stamp << " " << stamp << std::endl;
+    f1.close();
+  }
 
   key_value_stdmap_["transform_probability"] = std::to_string(transform_probability);
   key_value_stdmap_["iteration_num"] = std::to_string(iteration_num);

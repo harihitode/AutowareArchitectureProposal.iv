@@ -43,8 +43,9 @@
   <arg name="output_pose_with_covariance_without_yawbias_name" default="ekf_pose_with_covariance_without_yawbias"/>
   <arg name="output_twist_name" default="ekf_twist"/>
   <arg name="output_twist_with_covariance_name" default="ekf_twist_with_covariance"/>
+  <arg name="ndt_debug_tool" default="" />
 
-  <node pkg="ekf_localizer" type="ekf_localizer" name="ekf_localizer" output="screen">
+  <node pkg="ekf_localizer" type="ekf_localizer" name="ekf_localizer" output="screen" launch-prefix="$(arg ekf_debug_tool)">
 
     <remap unless="$(arg use_pose_with_covariance)" from="in_pose" to="$(arg input_pose_name)"/>
     <remap unless="$(arg use_pose_with_covariance)" from="in_pose_with_covariance" to="input_pose_with_cov_UNUSED"/>

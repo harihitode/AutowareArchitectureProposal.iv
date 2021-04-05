@@ -218,7 +218,7 @@ void pointcloud_preprocessor::Filter::input_indices_callback(
   {
     unsigned long long real_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     std::ofstream f0(std::string(std::getenv("HOME")) + "/.ros/eval_log/filter.log", std::ios::app);
-    f0 << this->get_name() << " start " << rclcpp::Time(cloud->header.stamp).nanoseconds() << " " << real_time << std::endl;
+    f0 << this->get_name() << " start " << rclcpp::Time(cloud->header.stamp).nanoseconds() / 1000 << " " << real_time << std::endl;
     f0.close();
   }
 
@@ -295,11 +295,11 @@ void pointcloud_preprocessor::Filter::input_indices_callback(
   {
     unsigned long long real_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     std::ofstream f0(std::string(std::getenv("HOME")) + "/.ros/eval_log/filter.log", std::ios::app);
-    f0 << this->get_name() << " end " << rclcpp::Time(cloud_tf->header.stamp).nanoseconds() << " " << real_time << std::endl;
+    f0 << this->get_name() << " end " << rclcpp::Time(cloud_tf->header.stamp).nanoseconds() / 1000 << " " << real_time << std::endl;
     f0.close();
 
     std::ofstream f1(std::string(std::getenv("HOME")) + "/.ros/eval_log/filter_sub.log", std::ios::app);
-    f1 << this->get_name() << " " << rclcpp::Time(cloud->header.stamp).nanoseconds() << " " << rclcpp::Time(cloud_tf->header.stamp).nanoseconds() << std::endl;
+    f1 << this->get_name() << " " << rclcpp::Time(cloud->header.stamp).nanoseconds() / 1000 << " " << rclcpp::Time(cloud_tf->header.stamp).nanoseconds() / 1000 << std::endl;
     f1.close();
   }
 }

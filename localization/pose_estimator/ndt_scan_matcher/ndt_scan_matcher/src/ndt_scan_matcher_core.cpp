@@ -323,7 +323,7 @@ void NDTScanMatcher::callbackSensorPoints(
   {
     unsigned long long real_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     std::ofstream f0(std::string(std::getenv("HOME")) + "/.ros/eval_log/ndt_scan_matcher.log", std::ios::app);
-    f0 << this->get_name() << " start " << sensor_points_sensorTF_msg_ptr->header.stamp.nanosec / 1000 << " " << real_time << std::endl;
+    f0 << this->get_name() << " start " << rclcpp::Time(sensor_points_sensorTF_msg_ptr->header.stamp).nanoseconds() / 1000 << " " << real_time << std::endl;
     f0.close();
   }
   const auto exe_start_time = std::chrono::system_clock::now();
@@ -570,7 +570,7 @@ void NDTScanMatcher::callbackSensorPoints(
 
   {
     unsigned long long real_time = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-    unsigned long long stamp = sensor_points_sensorTF_msg_ptr->header.stamp.nanosec / 1000;
+    unsigned long long stamp = rclcpp::Time(sensor_points_sensorTF_msg_ptr->header.stamp).nanoseconds() / 1000;
     std::ofstream f0(std::string(std::getenv("HOME")) + "/.ros/eval_log/ndt_scan_matcher.log", std::ios::app);
     f0 << this->get_name() << " end " << stamp << " " << real_time << std::endl;
     f0.close();
@@ -595,7 +595,11 @@ geometry_msgs::msg::PoseWithCovarianceStamped NDTScanMatcher::alignUsingMonteCar
   const geometry_msgs::msg::PoseWithCovarianceStamped & initial_pose_with_cov)
 {
   if (ndt_ptr->getInputTarget() == nullptr || ndt_ptr->getInputSource() == nullptr) {
-    RCLCPP_WARN(get_logger(), "No Map or Sensor PointCloud");
+    if (ndt_ptr->getInputTarget() == nullptr) {
+      RCLCPP_WARN(get_logger(), "No Map PointCloud");
+    } else {
+      RCLCPP_WARN(get_logger(), "No Sensor PointCloud");
+    }
     return geometry_msgs::msg::PoseWithCovarianceStamped();
   }
 
